@@ -59,6 +59,10 @@ export default function EditarProductoPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // =========================================================
+  // CARGAR PRODUCTO Y CATEGORÍAS
+  // =========================================================
+
   useEffect(() => {
     async function loadData() {
       setLoading(true);
@@ -92,12 +96,16 @@ export default function EditarProductoPage() {
       ]);
 
       if (productError) {
+        console.error("Error cargando producto:", productError);
+
         setError("No se pudo cargar el producto.");
         setLoading(false);
         return;
       }
 
       if (categoryError) {
+        console.error("Error cargando categorías:", categoryError);
+
         setError("No se pudieron cargar las categorías.");
         setLoading(false);
         return;
@@ -115,32 +123,35 @@ export default function EditarProductoPage() {
       setFeatures(loadedProduct.features?.join("\n") ?? "");
       setActive(loadedProduct.active);
 
-        const imageUrl = loadedProduct.image_url ?? "";
+      const imageUrl = loadedProduct.image_url ?? "";
 
-        setCurrentImage(imageUrl);
+      setCurrentImage(imageUrl);
 
-        if (imageUrl) {
+      if (imageUrl) {
         const marker =
-            "/storage/v1/object/public/product-images/";
+          "/storage/v1/object/public/product-images/";
 
         const index = imageUrl.indexOf(marker);
 
         if (index !== -1) {
-            const imagePath = decodeURIComponent(
+          const imagePath = decodeURIComponent(
             imageUrl.substring(index + marker.length)
-            );
+          );
 
-            setCurrentImagePath(imagePath);
+          setCurrentImagePath(imagePath);
         }
-    }
+      }
 
       setCategories(categoryData ?? []);
-
       setLoading(false);
     }
 
     loadData();
   }, [productId]);
+
+  // =========================================================
+  // SELECCIONAR NUEVA IMAGEN
+  // =========================================================
 
   function handleImageChange(
     event: React.ChangeEvent<HTMLInputElement>
@@ -155,171 +166,296 @@ export default function EditarProductoPage() {
     setPreview(objectUrl);
   }
 
-  function getStoragePathFromUrl(url: string | null) {
-  if (!url) return null;
+  // =========================================================
+  // GUARDAR CAMBIOS
+  // =========================================================
 
-  const marker = "/storage/v1/object/public/product-images/";
+  async function handleSubmit(
+    event: FormEvent<HTMLFormElement>
+  ) {
+    event.preventDefault();
 
-  const index = url.indexOf(marker);
+    setError("");
+    setSaving(true);
 
-  if (index === -1) return null;
+    try {
+      // -------------------------------------------------------
+      // VALIDACIONES
+      // -------------------------------------------------------
 
-  return decodeURIComponent(
-    url.substring(index + marker.length)
-  );
-}
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-  event.preventDefault();
+      if (!name.trim()) {
+        setError("El nombre es obligatorio.");
+        setSaving(false);
+        return;
+      }
 
-  setError("");
-  setSaving(true);
+      if (price === "" || Number(price) < 0) {
+        setError("El precio no es válido.");
+        setSaving(false);
+        return;
+      }
 
-  try {
-    if (!name.trim()) {
-      setError("El nombre es obligatorio.");
-      setSaving(false);
-      return;
-    }
+      if (stock === "" || Number(stock) < 0) {
+        setError("El stock no es válido.");
+        setSaving(false);
+        return;
+      }
 
-    if (!price || Number(price) < 0) {
-      setError("El precio no es válido.");
-      setSaving(false);
-      return;
-    }
+      if (!categoryId) {
+        setError("Seleccioná una categoría.");
+        setSaving(false);
+        return;
+      }
 
-    if (!stock || Number(stock) < 0) {
-      setError("El stock no es válido.");
-      setSaving(false);
-      return;
-    }
+      const newSlug = createSlug(name);
 
-    if (!categoryId) {
-      setError("Seleccioná una categoría.");
-      setSaving(false);
-      return;
-    }
+      // -------------------------------------------------------
+      // COMPROBAR SLUG
+      // -------------------------------------------------------
 
-    const newSlug = createSlug(name);
+      const {
+        data: existingProduct,
+        error: slugError,
+      } = await supabase
+        .from("products")
+        .select("id")
+        .eq("slug", newSlug)
+        .neq("id", productId)
+        .maybeSingle();
 
-    // Comprobar si el slug ya pertenece a otro producto
-    const { data: existingProduct, error: slugError } = await supabase
-      .from("products")
-      .select("id")
-      .eq("slug", newSlug)
-      .neq("id", productId)
-      .maybeSingle();
+      if (slugError) {
+        console.error(
+          "Error comprobando slug:",
+          slugError
+        );
 
-    if (slugError) {
-      setError("No se pudo comprobar el slug.");
-      setSaving(false);
-      return;
-    }
+        setError("No se pudo comprobar el slug.");
+        setSaving(false);
+        return;
+      }
 
-    if (existingProduct) {
-      setError("Ya existe otro producto con ese nombre.");
-      setSaving(false);
-      return;
-    }
-
-    const oldImageUrl = currentImage || null;
-
-    let imageUrl = oldImageUrl;
-    let newImagePath: string | null = null;
-
-    // =========================================================
-    // 1. Si se seleccionó una imagen nueva, subirla
-    // =========================================================
-    if (imageFile) {
-      const extension =
-        imageFile.name.split(".").pop()?.toLowerCase() || "jpg";
-
-      const fileName = `${newSlug}-${Date.now()}.${extension}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("product-images")
-        .upload(fileName, imageFile);
-
-      if (uploadError) {
+      if (existingProduct) {
         setError(
-          `No se pudo subir la nueva imagen: ${uploadError.message}`
+          "Ya existe otro producto con ese nombre."
         );
         setSaving(false);
         return;
       }
 
-      newImagePath = fileName;
+      // -------------------------------------------------------
+      // IMAGEN ACTUAL
+      // -------------------------------------------------------
 
-      const { data: publicUrlData } = supabase.storage
-        .from("product-images")
-        .getPublicUrl(fileName);
+      const oldImageUrl = currentImage || null;
 
-      imageUrl = publicUrlData.publicUrl;
-    }
+      let imageUrl = oldImageUrl;
+      let newImagePath: string | null = null;
 
-    const featureList = features
-      .split("\n")
-      .map((feature) => feature.trim())
-      .filter(Boolean);
+      // -------------------------------------------------------
+      // SUBIR NUEVA IMAGEN
+      // -------------------------------------------------------
 
-    // =========================================================
-    // 2. Actualizar el producto
-    // =========================================================
-    const { error: updateError } = await supabase
-      .from("products")
-      .update({
-        name: name.trim(),
-        slug: newSlug,
-        description: description.trim() || null,
-        price: Number(price),
-        stock: Number(stock),
-        category_id: categoryId,
-        features: featureList,
-        image_url: imageUrl,
-        active,
-      })
-      .eq("id", productId);
+      if (imageFile) {
+        const extension =
+          imageFile.name
+            .split(".")
+            .pop()
+            ?.toLowerCase() || "jpg";
 
-    // =========================================================
-    // 3. Si todo salió bien, eliminar la imagen anterior
-    // =========================================================
+        const fileName =
+          `${newSlug}-${Date.now()}.${extension}`;
 
-    if (imageFile && currentImagePath) {
-        console.log(
-            "Intentando eliminar imagen anterior:",
-            currentImagePath
+        const { error: uploadError } =
+          await supabase.storage
+            .from("product-images")
+            .upload(fileName, imageFile);
+
+        if (uploadError) {
+          console.error(
+            "Error subiendo imagen:",
+            uploadError
+          );
+
+          setError(
+            `No se pudo subir la nueva imagen: ${uploadError.message}`
+          );
+
+          setSaving(false);
+          return;
+        }
+
+        newImagePath = fileName;
+
+        const { data: publicUrlData } =
+          supabase.storage
+            .from("product-images")
+            .getPublicUrl(fileName);
+
+        imageUrl = publicUrlData.publicUrl;
+      }
+
+      // -------------------------------------------------------
+      // CARACTERÍSTICAS
+      // -------------------------------------------------------
+
+      const featureList = features
+        .split("\n")
+        .map((feature) => feature.trim())
+        .filter(Boolean);
+
+      // -------------------------------------------------------
+      // ACTUALIZAR PRODUCTO
+      // -------------------------------------------------------
+
+      console.log(
+        "Guardando producto con active:",
+        active
+      );
+
+      const {
+        data: updatedProduct,
+        error: updateError,
+      } = await supabase
+        .from("products")
+        .update({
+          name: name.trim(),
+          slug: newSlug,
+          description:
+            description.trim() || null,
+          price: Number(price),
+          stock: Number(stock),
+          category_id: categoryId,
+          features: featureList,
+          image_url: imageUrl,
+          active: active,
+        })
+        .eq("id", productId)
+        .select(`
+          id,
+          name,
+          active
+        `)
+        .single();
+
+      // -------------------------------------------------------
+      // COMPROBAR ERROR DE SUPABASE
+      // -------------------------------------------------------
+
+      if (updateError) {
+        console.error(
+          "Error actualizando producto:",
+          updateError
         );
 
-        const response = await fetch("/api/admin/storage/delete", {
-            method: "POST",
-            headers: {
-            "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-            path: currentImagePath,
-            }),
-        });
+        // Si se había subido una imagen nueva,
+        // intentamos eliminarla porque el producto no se actualizó.
+        if (newImagePath) {
+          await supabase.storage
+            .from("product-images")
+            .remove([newImagePath]);
+        }
 
-        const result = await response.json();
+        setError(
+          `No se pudo actualizar el producto: ${updateError.message}`
+        );
 
-        if (!response.ok) {
+        setSaving(false);
+        return;
+      }
+
+      // -------------------------------------------------------
+      // COMPROBAR QUE SUPABASE DEVOLVIÓ EL PRODUCTO
+      // -------------------------------------------------------
+
+      if (!updatedProduct) {
+        console.error(
+          "Supabase no devolvió el producto actualizado."
+        );
+
+        setError(
+          "No se pudo confirmar la actualización del producto."
+        );
+
+        setSaving(false);
+        return;
+      }
+
+      console.log(
+        "Producto actualizado correctamente:",
+        updatedProduct
+      );
+
+      console.log(
+        "Estado active guardado:",
+        updatedProduct.active
+      );
+
+      // -------------------------------------------------------
+      // ELIMINAR IMAGEN ANTERIOR
+      // -------------------------------------------------------
+
+      if (imageFile && currentImagePath) {
+        try {
+          const response = await fetch(
+            "/api/admin/storage/delete",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify({
+                path: currentImagePath,
+              }),
+            }
+          );
+
+          const result = await response.json();
+
+          if (!response.ok) {
             console.error(
-            "No se pudo eliminar la imagen anterior:",
-            result.error
+              "No se pudo eliminar la imagen anterior:",
+              result.error
             );
-        } else {
-            console.log("Imagen anterior eliminada:", result.data);
+          } else {
+            console.log(
+              "Imagen anterior eliminada:",
+              result.data
+            );
+          }
+        } catch (imageDeleteError) {
+          console.error(
+            "Error eliminando imagen anterior:",
+            imageDeleteError
+          );
         }
-        }
-    // =========================================================
-    // 4. Volver a la lista
-    // =========================================================
-    router.push("/admin/productos");
-    router.refresh();
-  } catch {
-    setError("Ocurrió un error inesperado.");
-    setSaving(false);
+      }
+
+      // -------------------------------------------------------
+      // VOLVER A PRODUCTOS
+      // -------------------------------------------------------
+
+      router.push("/admin/productos");
+      router.refresh();
+    } catch (unexpectedError) {
+      console.error(
+        "Error inesperado:",
+        unexpectedError
+      );
+
+      setError(
+        "Ocurrió un error inesperado."
+      );
+
+      setSaving(false);
+    }
   }
-}
+
+  // =========================================================
+  // LOADING
+  // =========================================================
 
   if (loading) {
     return (
@@ -333,6 +469,10 @@ export default function EditarProductoPage() {
     );
   }
 
+  // =========================================================
+  // PRODUCTO NO ENCONTRADO
+  // =========================================================
+
   if (!product) {
     return (
       <main className="min-h-screen bg-gray-50 px-6 py-12">
@@ -340,6 +480,7 @@ export default function EditarProductoPage() {
           <p className="text-sm text-red-600">
             No se encontró el producto.
           </p>
+
           <Link
             href="/admin/productos"
             className="mt-4 inline-block text-sm font-medium underline"
@@ -351,14 +492,21 @@ export default function EditarProductoPage() {
     );
   }
 
+  // =========================================================
+  // INTERFAZ
+  // =========================================================
+
   return (
     <main className="min-h-screen bg-gray-50">
+      {/* HEADER */}
+
       <header className="border-b border-gray-100 bg-white">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
           <div>
             <h1 className="text-xl font-bold tracking-[0.15em]">
               MERAKI
             </h1>
+
             <p className="text-xs text-gray-500">
               Editar producto
             </p>
@@ -372,6 +520,8 @@ export default function EditarProductoPage() {
           </Link>
         </div>
       </header>
+
+      {/* CONTENIDO */}
 
       <div className="mx-auto max-w-3xl px-6 py-12">
         <div className="mb-8">
@@ -392,6 +542,8 @@ export default function EditarProductoPage() {
           onSubmit={handleSubmit}
           className="space-y-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
         >
+          {/* NOMBRE */}
+
           <div>
             <label className="text-sm font-medium text-gray-900">
               Nombre
@@ -400,11 +552,15 @@ export default function EditarProductoPage() {
             <input
               type="text"
               value={name}
-              onChange={(event) => setName(event.target.value)}
+              onChange={(event) =>
+                setName(event.target.value)
+              }
               className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-black"
               placeholder="Ej. Lámpara LED Minecraft"
             />
           </div>
+
+          {/* DESCRIPCIÓN */}
 
           <div>
             <label className="text-sm font-medium text-gray-900">
@@ -413,12 +569,18 @@ export default function EditarProductoPage() {
 
             <textarea
               value={description}
-              onChange={(event) => setDescription(event.target.value)}
+              onChange={(event) =>
+                setDescription(
+                  event.target.value
+                )
+              }
               rows={4}
               className="mt-2 w-full resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-black"
               placeholder="Descripción del producto..."
             />
           </div>
+
+          {/* PRECIO Y STOCK */}
 
           <div className="grid gap-5 sm:grid-cols-2">
             <div>
@@ -431,7 +593,9 @@ export default function EditarProductoPage() {
                 min="0"
                 step="1"
                 value={price}
-                onChange={(event) => setPrice(event.target.value)}
+                onChange={(event) =>
+                  setPrice(event.target.value)
+                }
                 className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-black"
                 placeholder="120000"
               />
@@ -447,12 +611,16 @@ export default function EditarProductoPage() {
                 min="0"
                 step="1"
                 value={stock}
-                onChange={(event) => setStock(event.target.value)}
+                onChange={(event) =>
+                  setStock(event.target.value)
+                }
                 className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-black"
                 placeholder="3"
               />
             </div>
           </div>
+
+          {/* CATEGORÍA */}
 
           <div>
             <label className="text-sm font-medium text-gray-900">
@@ -461,18 +629,31 @@ export default function EditarProductoPage() {
 
             <select
               value={categoryId}
-              onChange={(event) => setCategoryId(event.target.value)}
+              onChange={(event) =>
+                setCategoryId(
+                  event.target.value
+                )
+              }
               className="mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-black"
             >
-              <option value="">Seleccionar categoría</option>
+              <option value="">
+                Seleccionar categoría
+              </option>
 
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
+              {categories.map(
+                (category) => (
+                  <option
+                    key={category.id}
+                    value={category.id}
+                  >
+                    {category.name}
+                  </option>
+                )
+              )}
             </select>
           </div>
+
+          {/* CARACTERÍSTICAS */}
 
           <div>
             <label className="text-sm font-medium text-gray-900">
@@ -485,7 +666,11 @@ export default function EditarProductoPage() {
 
             <textarea
               value={features}
-              onChange={(event) => setFeatures(event.target.value)}
+              onChange={(event) =>
+                setFeatures(
+                  event.target.value
+                )
+              }
               rows={5}
               className="mt-2 w-full resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none transition focus:border-black"
               placeholder={`Alimentación USB
@@ -493,6 +678,8 @@ Diseño decorativo
 Fácil instalación`}
             />
           </div>
+
+          {/* IMAGEN */}
 
           <div>
             <label className="text-sm font-medium text-gray-900">
@@ -521,16 +708,20 @@ Fácil instalación`}
               <input
                 type="file"
                 accept="image/*"
-                onChange={handleImageChange}
+                onChange={
+                  handleImageChange
+                }
                 className="block w-full text-sm text-gray-500"
               />
 
               <p className="text-xs text-gray-400">
-                Si no seleccionás una imagen nueva, se conservará la
-                actual.
+                Si no seleccionás una imagen
+                nueva, se conservará la actual.
               </p>
             </div>
           </div>
+
+          {/* ACTIVO / INACTIVO */}
 
           <div className="flex items-center justify-between rounded-xl border border-gray-100 bg-gray-50 p-4">
             <div>
@@ -539,35 +730,64 @@ Fácil instalación`}
               </p>
 
               <p className="mt-1 text-xs text-gray-500">
-                Los productos inactivos no aparecen en el catálogo.
+                {active
+                  ? "El producto aparece en el catálogo."
+                  : "El producto está oculto del catálogo."}
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setActive(!active)}
-              className={`relative h-6 w-11 rounded-full transition ${
-                active ? "bg-black" : "bg-gray-300"
-              }`}
-              aria-label={
-                active
-                  ? "Desactivar producto"
-                  : "Activar producto"
-              }
-            >
+            <div className="flex items-center gap-3">
               <span
-                className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${
-                  active ? "left-6" : "left-1"
+                className={`text-xs font-medium ${
+                  active
+                    ? "text-green-600"
+                    : "text-gray-500"
                 }`}
-              />
-            </button>
+              >
+                {active
+                  ? "Activo"
+                  : "Inactivo"}
+              </span>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setActive(
+                    (current) =>
+                      !current
+                  )
+                }
+                className={`relative h-6 w-11 rounded-full transition ${
+                  active
+                    ? "bg-black"
+                    : "bg-gray-300"
+                }`}
+                aria-label={
+                  active
+                    ? "Desactivar producto"
+                    : "Activar producto"
+                }
+              >
+                <span
+                  className={`absolute top-1 h-4 w-4 rounded-full bg-white transition-all ${
+                    active
+                      ? "left-6"
+                      : "left-1"
+                  }`}
+                />
+              </button>
+            </div>
           </div>
+
+          {/* ERROR */}
 
           {error && (
             <div className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">
               {error}
             </div>
           )}
+
+          {/* BOTONES */}
 
           <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
             <Link
@@ -582,7 +802,9 @@ Fácil instalación`}
               disabled={saving}
               className="rounded-xl bg-black px-5 py-3 text-sm font-medium text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {saving ? "Guardando..." : "Guardar cambios"}
+              {saving
+                ? "Guardando..."
+                : "Guardar cambios"}
             </button>
           </div>
         </form>
