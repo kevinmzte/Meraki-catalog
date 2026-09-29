@@ -18,32 +18,50 @@ export default function Header() {
   const isHome = pathname === "/";
   const isCatalog = pathname.startsWith("/catalogo");
 
-  // Mantener presionado durante 3 segundos
-  const handlePressStart = () => {
+  // Iniciar pulsación sobre el logo
+  const handlePressStart = (
+    e: React.PointerEvent<HTMLButtonElement>
+  ) => {
+    e.preventDefault();
+
     longPressActivated.current = false;
+
+    // Limpiar cualquier temporizador anterior
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+    }
 
     pressTimer.current = setTimeout(() => {
       longPressActivated.current = true;
+      pressTimer.current = null;
+
+      // Pequeña vibración en dispositivos compatibles
+      if ("vibrate" in navigator) {
+        navigator.vibrate(100);
+      }
 
       // Acceso secreto al administrador
       router.push("/admin");
     }, 3000);
   };
 
-  // Soltar el logo
-  const handlePressEnd = () => {
+  // Soltar antes de los 3 segundos = Home
+  const handlePressEnd = (
+    e: React.PointerEvent<HTMLButtonElement>
+  ) => {
+    e.preventDefault();
+
     if (pressTimer.current) {
       clearTimeout(pressTimer.current);
       pressTimer.current = null;
     }
 
-    // Si NO llegó a los 4 segundos, funciona como clic normal
     if (!longPressActivated.current) {
       router.push("/");
     }
   };
 
-  // Si el usuario mueve el mouse fuera del logo, cancelar
+  // Cancelar la pulsación
   const handlePressCancel = () => {
     if (pressTimer.current) {
       clearTimeout(pressTimer.current);
@@ -58,15 +76,19 @@ export default function Header() {
         {/* Logo */}
         <button
           type="button"
-          onMouseDown={handlePressStart}
-          onMouseUp={handlePressEnd}
-          onMouseLeave={handlePressCancel}
-          onTouchStart={handlePressStart}
-          onTouchEnd={handlePressEnd}
-          onTouchCancel={handlePressCancel}
+          onPointerDown={handlePressStart}
+          onPointerUp={handlePressEnd}
+          onPointerCancel={handlePressCancel}
+          onPointerLeave={handlePressCancel}
           onContextMenu={(e) => e.preventDefault()}
-          className="group flex touch-none items-center bg-transparent p-0"
+          className="group flex touch-none select-none items-center bg-transparent p-0"
           aria-label="Ir al inicio"
+          style={{
+            WebkitTouchCallout: "none",
+            WebkitUserSelect: "none",
+            userSelect: "none",
+            touchAction: "none",
+          }}
         >
           <Image
             src="/logo-meraki.png"
@@ -75,12 +97,12 @@ export default function Header() {
             height={50}
             priority
             draggable={false}
-            onContextMenu={(e) => e.preventDefault()}
-            className="h-auto w-auto select-none touch-none transition duration-300 group-hover:scale-105"
+            className="pointer-events-none h-auto w-auto select-none transition duration-300 group-hover:scale-105"
             style={{
               WebkitTouchCallout: "none",
               WebkitUserSelect: "none",
               userSelect: "none",
+              pointerEvents: "none",
             }}
           />
         </button>
