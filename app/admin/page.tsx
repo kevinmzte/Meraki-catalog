@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 
 export default async function AdminPage() {
   const supabase = await createClient();
@@ -7,12 +8,25 @@ export default async function AdminPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Cerrar sesión
+  async function logout() {
+    "use server";
+
+    const supabase = await createClient();
+
+    await supabase.auth.signOut();
+
+    redirect("/admin/login");
+  }
+
   return (
     <main className="min-h-screen bg-gray-50">
 
       {/* Navbar */}
       <header className="border-b border-gray-100 bg-white">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
+
+          {/* Logo / título */}
           <div>
             <h1 className="text-xl font-bold tracking-[0.15em]">
               MERAKI
@@ -23,14 +37,28 @@ export default async function AdminPage() {
             </p>
           </div>
 
-          <div className="text-right">
-            <p className="text-sm font-medium text-gray-900">
-              Administrador
-            </p>
+          {/* Usuario + cerrar sesión */}
+          <div className="flex items-center gap-5">
 
-            <p className="text-xs text-gray-500">
-              {user?.email}
-            </p>
+            <div className="hidden text-right sm:block">
+              <p className="text-sm font-medium text-gray-900">
+                Administrador
+              </p>
+
+              <p className="text-xs text-gray-500">
+                {user?.email}
+              </p>
+            </div>
+
+            <form action={logout}>
+              <button
+                type="submit"
+                className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+              >
+                Cerrar sesión
+              </button>
+            </form>
+
           </div>
         </div>
       </header>
@@ -55,6 +83,7 @@ export default async function AdminPage() {
         {/* Opciones */}
         <div className="mt-10 grid gap-6 sm:grid-cols-2">
 
+          {/* Productos */}
           <a
             href="/admin/productos"
             className="group rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-gray-200 hover:shadow-lg"
@@ -78,6 +107,7 @@ export default async function AdminPage() {
             </p>
           </a>
 
+          {/* Categorías */}
           <a
             href="/admin/categorias"
             className="group rounded-2xl border border-gray-100 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-gray-200 hover:shadow-lg"
