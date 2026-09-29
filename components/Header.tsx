@@ -2,25 +2,69 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useRef } from "react";
 
 import CartButton from "@/components/CartButton";
 import MobileMenu from "@/components/MobileMenu";
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressActivated = useRef(false);
 
   const isHome = pathname === "/";
   const isCatalog = pathname.startsWith("/catalogo");
+
+  // Mantener presionado durante 3 segundos
+  const handlePressStart = () => {
+    longPressActivated.current = false;
+
+    pressTimer.current = setTimeout(() => {
+      longPressActivated.current = true;
+
+      // Acceso secreto al administrador
+      router.push("/admin");
+    }, 3000);
+  };
+
+  // Soltar el logo
+  const handlePressEnd = () => {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+
+    // Si NO llegó a los 4 segundos, funciona como clic normal
+    if (!longPressActivated.current) {
+      router.push("/");
+    }
+  };
+
+  // Si el usuario mueve el mouse fuera del logo, cancelar
+  const handlePressCancel = () => {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-gray-100 bg-white/90 backdrop-blur-md">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
 
         {/* Logo */}
-        <Link
-          href="/"
-          className="group flex items-center"
+        <button
+          type="button"
+          onMouseDown={handlePressStart}
+          onMouseUp={handlePressEnd}
+          onMouseLeave={handlePressCancel}
+          onTouchStart={handlePressStart}
+          onTouchEnd={handlePressEnd}
+          onTouchCancel={handlePressCancel}
+          className="group flex items-center bg-transparent p-0"
           aria-label="Ir al inicio"
         >
           <Image
@@ -29,9 +73,10 @@ export default function Header() {
             width={140}
             height={50}
             priority
-            className="h-auto w-auto transition duration-300 group-hover:scale-105"
+            draggable={false}
+            className="h-auto w-auto select-none transition duration-300 group-hover:scale-105"
           />
-        </Link>
+        </button>
 
         {/* Navegación desktop */}
         <nav className="hidden items-center gap-8 md:flex">
