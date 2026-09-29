@@ -213,6 +213,7 @@ export default async function Home() {
         </p>
       </div>
 
+      {/* Agradecimiento */}
       <div className="mt-8 flex items-center gap-4">
         <div className="h-px w-10 bg-gray-300" />
 
@@ -221,20 +222,64 @@ export default async function Home() {
         </p>
       </div>
 
-      <Link
-        href="/catalogo"
-        className="group mt-9 inline-flex items-center gap-2 text-sm font-semibold text-gray-900"
-      >
-        Conocé nuestros productos
+      {/* Enlaces */}
+      <div className="mt-9 flex flex-wrap items-center gap-x-7 gap-y-4">
 
-        <span className="transition-transform duration-300 group-hover:translate-x-1">
-          →
-        </span>
-      </Link>
+        {/* Catálogo */}
+        <Link
+          href="/catalogo"
+          className="group inline-flex items-center gap-2 text-sm font-semibold text-gray-900"
+        >
+          Conocé nuestros productos
 
+          <span className="transition-transform duration-300 group-hover:translate-x-1">
+            →
+          </span>
+        </Link>
+
+        {/* Instagram */}
+        <a
+          href="https://www.instagram.com/bymeraki.py"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Instagram de Meraki"
+          className="group inline-flex items-center gap-2 text-sm font-semibold text-gray-500 transition-colors duration-300 hover:text-pink-500"
+        >
+          {/* Ícono Instagram */}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-5 w-5"
+            aria-hidden="true"
+          >
+            <rect
+              width="18"
+              height="18"
+              x="3"
+              y="3"
+              rx="5"
+              ry="5"
+            />
+            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+            <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+          </svg>
+
+          Seguinos en Instagram
+
+          <span className="transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5">
+            ↗
+          </span>
+        </a>
+
+      </div>
     </div>
   </div>
-</section>     
+</section>
 {/* FOOTER / CTA */}
       <footer className="px-6 py-20">
         <div className="mx-auto max-w-4xl rounded-3xl bg-gray-100 px-6 py-14 text-center">
