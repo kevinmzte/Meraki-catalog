@@ -64,7 +64,8 @@ export default function Header() {
           onTouchStart={handlePressStart}
           onTouchEnd={handlePressEnd}
           onTouchCancel={handlePressCancel}
-          className="group flex items-center bg-transparent p-0"
+          onContextMenu={(e) => e.preventDefault()}
+          className="group flex touch-none items-center bg-transparent p-0"
           aria-label="Ir al inicio"
         >
           <Image
@@ -74,7 +75,13 @@ export default function Header() {
             height={50}
             priority
             draggable={false}
-            className="h-auto w-auto select-none transition duration-300 group-hover:scale-105"
+            onContextMenu={(e) => e.preventDefault()}
+            className="h-auto w-auto select-none touch-none transition duration-300 group-hover:scale-105"
+            style={{
+              WebkitTouchCallout: "none",
+              WebkitUserSelect: "none",
+              userSelect: "none",
+            }}
           />
         </button>
 
