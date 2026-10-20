@@ -91,13 +91,12 @@ export default function Header() {
           }}
         >
           <Image
-            src="/logo-emprendimiento.png"
+            src="/logotipo-new.png"
             alt="Meraki"
             width={140}
-            height={50}
-            priority
+            height={70}
             draggable={false}
-            className="pointer-events-none h-auto w-auto select-none transition duration-300 group-hover:scale-105"
+            className="pointer-events-none h-auto w-[170px] select-none transition duration-300 group-hover:scale-105 sm:w-[190px]"
             style={{
               WebkitTouchCallout: "none",
               WebkitUserSelect: "none",

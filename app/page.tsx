@@ -7,6 +7,19 @@ export default async function Home() {
   const products = await getProducts();
 
   const featuredProducts = products.slice(0, 4);
+
+  const clothingProducts = products.filter((product) => {
+    const categories = Array.isArray(product.categories)
+      ? product.categories
+      : product.categories
+        ? [product.categories]
+        : [];
+
+    return categories.some(
+      (category) => category.name?.trim().toLowerCase() === "ropa"
+    );
+  });
+
   return (
     <main className="min-h-screen bg-white">
       {/* NAV */}
@@ -161,6 +174,111 @@ export default async function Home() {
 
   </div>
 </section> 
+{/* ROPA */}
+<section className="bg-white px-6 py-20 sm:py-24">
+  <div className="mx-auto max-w-7xl">
+    <div>
+      <p className="text-sm font-medium uppercase tracking-[0.2em] text-gray-400">
+        Tu estilo
+      </p>
+      <h2 className="mt-3 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+        Ropa
+      </h2>
+      <p className="mt-4 max-w-xl leading-7 text-gray-500">
+        Encontrá tu próximo favorito.
+      </p>
+    </div>
+    {/* Productos de ropa */}
+    {clothingProducts.length > 0 ? (
+    <div className="mt-12 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
+      {clothingProducts.map((product) => {
+        const categories = Array.isArray(product.categories)
+          ? product.categories
+          : product.categories
+            ? [product.categories]
+            : [];
+        const category = categories.find(
+          (category) => category.name?.trim().toLowerCase() === "ropa"
+        );
+
+
+        return (
+          <Link
+            key={product.id}
+            href={`/catalogo/${product.slug}`}
+            className="group block"
+          >
+            <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white transition-all duration-300 hover:-translate-y-1 hover:border-gray-200 hover:shadow-xl">
+
+              {/* Imagen */}
+              <div className="relative aspect-square overflow-hidden bg-gray-50">
+                {product.image_url ? (
+                  <img
+                    src={product.image_url}
+                    alt={product.name}
+                    loading="lazy"
+                    className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-sm text-gray-400">
+                    Sin imagen
+                  </div>
+                )}
+
+                {/* Categoría */}
+                {category?.name && (
+                  <div className="absolute left-3 top-3 sm:left-4 sm:top-4">
+                    <span className="rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-medium text-gray-700 shadow-sm backdrop-blur sm:px-3 sm:py-1.5 sm:text-xs">
+                      {category.name}
+                    </span>
+                  </div>
+                )}
+
+                {/* Overlay sutil */}
+                <div className="pointer-events-none absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/[0.02]" />
+              </div>
+
+              {/* Información */}
+              <div className="flex flex-1 flex-col p-3 sm:p-5">
+
+                {/* Nombre */}
+                <h3 className="line-clamp-2 text-sm font-semibold leading-5 text-gray-900 transition-colors duration-300 group-hover:text-gray-600 sm:min-h-[48px] sm:text-base sm:leading-6">
+                  {product.name}
+                </h3>
+
+                {/* Precio + enlace */}
+                <div className="mt-auto flex items-end justify-between gap-2 pt-3 sm:pt-4">
+
+                  <p className="text-base font-bold text-gray-900 sm:text-lg">
+                    {Number(product.price).toLocaleString("es-PY")}
+                    <span className="ml-1 text-[10px] font-medium text-gray-500 sm:text-xs">
+                      Gs.
+                    </span>
+                  </p>
+
+                  <span className="hidden shrink-0 items-center gap-1 text-sm font-medium text-gray-400 transition-all duration-300 group-hover:text-gray-900 md:inline-flex">
+                    Ver
+                    <span className="transition-transform duration-300 group-hover:translate-x-1">
+                      →
+                    </span>
+                  </span>
+
+                </div>
+              </div>
+            </article>
+          </Link>
+        );
+      })}
+    </div>
+    ) : (
+      <div className="mt-12 rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-6 py-12 text-center">
+        <p className="text-sm text-gray-500">
+          Pronto vas a encontrar novedades de ropa acá.
+        </p>
+      </div>
+    )}
+  </div>
+</section>
 {/* SOBRE MERAKI */}
 <section className="bg-gray-50 px-6 py-20 sm:py-24">
   <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-20">
