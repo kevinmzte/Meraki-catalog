@@ -91,7 +91,7 @@ export default function Header() {
           }}
         >
           <Image
-            src="/logo-meraki.png"
+            src="/logo-emprendimiento.png"
             alt="Meraki"
             width={140}
             height={50}

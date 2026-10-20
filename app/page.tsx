@@ -32,7 +32,7 @@ export default async function Home() {
             </p>
 
             <h1 className="mt-5 text-5xl font-bold tracking-tight sm:text-6xl">
-              Encontrá algo creativo para vos o para ese alguien.
+              Date un gustito o sorprendé a alguien especial.
             </h1>
 
             <p className="mt-6 max-w-2xl text-lg leading-8 text-white/80">
