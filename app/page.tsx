@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { getProducts } from "@/lib/products";
 import Header from "@/components/Header";
-import AnnouncementBar from "@/components/AnnouncementBar";
 
 export default async function Home() {
   const products = await getProducts();
@@ -16,14 +15,13 @@ export default async function Home() {
         : [];
 
     return categories.some(
-      (category) => category.name?.trim().toLowerCase() === "ropa"
+      (category) => category.name?.trim().toLowerCase() === "tecnologia"
     );
   });
 
   return (
     <main className="min-h-screen bg-white">
       {/* NAV */}
-      <AnnouncementBar />
       <Header />
       {/* HERO */}
       <section className="relative min-h-[600px] overflow-hidden">
@@ -174,21 +172,21 @@ export default async function Home() {
 
   </div>
 </section> 
-{/* ROPA */}
+{/* TECNOLOGIA */}
 <section className="bg-white px-6 py-20 sm:py-24">
   <div className="mx-auto max-w-7xl">
     <div>
       <p className="text-sm font-medium uppercase tracking-[0.2em] text-gray-400">
-        Tu estilo
+        Tu compra ideal
       </p>
       <h2 className="mt-3 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-        Ropa
+        Tecnología
       </h2>
       <p className="mt-4 max-w-xl leading-7 text-gray-500">
         Encontrá tu próximo favorito.
       </p>
     </div>
-    {/* Productos de ropa */}
+    {/* Productos de tecnología */}
     {clothingProducts.length > 0 ? (
     <div className="mt-12 grid grid-cols-2 gap-4 sm:gap-6 lg:grid-cols-4">
       {clothingProducts.map((product) => {
@@ -198,7 +196,7 @@ export default async function Home() {
             ? [product.categories]
             : [];
         const category = categories.find(
-          (category) => category.name?.trim().toLowerCase() === "ropa"
+          (category) => category.name?.trim().toLowerCase() === "tecnologia"
         );
 
 
@@ -273,7 +271,7 @@ export default async function Home() {
     ) : (
       <div className="mt-12 rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-6 py-12 text-center">
         <p className="text-sm text-gray-500">
-          Pronto vas a encontrar novedades de ropa acá.
+          Pronto vas a encontrar novedades de tecnología acá.
         </p>
       </div>
     )}
