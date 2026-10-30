@@ -15,7 +15,7 @@ export default async function Home() {
         : [];
 
     return categories.some(
-      (category) => category.name?.trim().toLowerCase() === "tecnologia"
+      (category) => category.name?.trim().toLowerCase() === "tecnología"
     );
   });
 
@@ -196,7 +196,7 @@ export default async function Home() {
             ? [product.categories]
             : [];
         const category = categories.find(
-          (category) => category.name?.trim().toLowerCase() === "tecnologia"
+          (category) => category.name?.trim().toLowerCase() === "tecnología"
         );
 
 
